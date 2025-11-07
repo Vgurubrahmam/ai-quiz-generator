@@ -22,7 +22,7 @@ export default function QuizDisplay({ quizId, onBack }) {
         setLoading(true)
         setError(null)
         try {
-            const response = await fetch(`http://localhost:8000/quiz/${id}`)
+            const response = await fetch(`https://quizmakerai-backend.vercel.app/quiz/${id}`)
             const data = await response.json()
 
             if (!response.ok) {
