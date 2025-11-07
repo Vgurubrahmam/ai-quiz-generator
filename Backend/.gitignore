@@ -21,3 +21,4 @@ quiz_history.db
 
 # Logs
 *.log
+.vercel
