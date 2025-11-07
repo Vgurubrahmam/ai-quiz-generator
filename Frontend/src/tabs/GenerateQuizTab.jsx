@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React, { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -41,12 +42,9 @@ export default function GenerateQuizTab() {
       if (!response.ok) {
         setError(data.detail || response.statusText)
       } else {
-        console.log('Backend response:', data)
-        console.log('Quiz data:', data.quiz)
-        
+
         const parsed = parseQuizData(data.quiz)
-        console.log('Parsed quiz:', parsed)
-        
+
         if (parsed) {
           setQuiz(parsed)
           setCurrent(0)
@@ -60,7 +58,7 @@ export default function GenerateQuizTab() {
           const rawData = data.quiz
           const hasMetadata = rawData?.metadata
           const totalQuestions = Array.isArray(rawData?.questions) ? rawData.questions.length : 0
-          
+
           let errorMsg = 'Failed to parse quiz data. '
           if (hasMetadata && totalQuestions > 0) {
             errorMsg += `The backend returned ${totalQuestions} questions, but they contain errors (missing options, correct answer, or explanation). The LLM generated incomplete data. Please try again.`
@@ -71,7 +69,73 @@ export default function GenerateQuizTab() {
           } else {
             errorMsg += `Unexpected format. Check console for details.`
           }
-          
+
+          setError(errorMsg)
+        }
+      }
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Helper function to generate quiz from a direct URL (for related topics)
+  const generateQuizFromUrl = async (newUrl) => {
+    if (!newUrl.trim()) {
+      alert("Invalid URL")
+      return
+    }
+
+    // Reset quiz state and set new URL
+    setQuiz(null)
+    setUrl(newUrl)
+    setCurrent(0)
+    setAnswers({})
+    setMarked(new Set())
+    setSubmitted(false)
+    setShowScorecard(false)
+    setTimeLeft(15 * 60)
+    setError(null)
+    setLoading(true)
+
+    try {
+      const response = await fetch("http://localhost:8000/generate_quiz", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: newUrl }),
+      })
+      const data = await response.json()
+      if (!response.ok) {
+        setError(data.detail || response.statusText)
+      } else {
+
+        const parsed = parseQuizData(data.quiz)
+
+        if (parsed) {
+          setQuiz(parsed)
+          setCurrent(0)
+          setAnswers({})
+          setMarked(new Set())
+          setSubmitted(false)
+          setShowScorecard(false)
+          setTimeLeft(15 * 60)
+        } else {
+          const rawData = data.quiz
+          const hasMetadata = rawData?.metadata
+          const totalQuestions = Array.isArray(rawData?.questions) ? rawData.questions.length : 0
+
+          let errorMsg = 'Failed to parse quiz data. '
+          if (hasMetadata && totalQuestions > 0) {
+            errorMsg += `The backend returned ${totalQuestions} questions, but they contain errors (missing options, correct answer, or explanation). The LLM generated incomplete data. Please try again.`
+          } else if (hasMetadata && totalQuestions === 0) {
+            errorMsg += 'The backend returned metadata but no questions. The LLM may have failed to generate questions. Try again or use a different URL.'
+          } else if (!hasMetadata && totalQuestions > 0) {
+            errorMsg += 'The backend returned questions but no metadata.'
+          } else {
+            errorMsg += `Unexpected format. Check console for details.`
+          }
+
           setError(errorMsg)
         }
       }
@@ -84,13 +148,11 @@ export default function GenerateQuizTab() {
 
   // Parse quiz data (handles wrapped JSON)
   const parseQuizData = (data) => {
-    console.log('parseQuizData called with:', typeof data, data)
-    
+
     if (!data) {
-      console.log('Data is null/undefined')
       return null
     }
-    
+
     const tryParse = (text) => {
       if (!text || typeof text !== 'string') return null
       // Strip code fences like ```json ... ```
@@ -98,19 +160,15 @@ export default function GenerateQuizTab() {
       const candidate = codeFenceMatch ? codeFenceMatch[1] : text
       try {
         const parsed = JSON.parse(candidate)
-        console.log('Successfully parsed JSON:', parsed)
         return parsed
       } catch (e) {
-        console.log('JSON parse failed:', e.message)
         const first = candidate.indexOf('{')
         const last = candidate.lastIndexOf('}')
         if (first !== -1 && last !== -1 && last > first) {
           try {
             const parsed = JSON.parse(candidate.slice(first, last + 1))
-            console.log('Successfully parsed substring:', parsed)
             return parsed
           } catch (e2) {
-            console.log('Substring parse also failed:', e2.message)
             return null
           }
         }
@@ -121,21 +179,21 @@ export default function GenerateQuizTab() {
     // Helper to validate and clean questions
     const validateAndCleanQuestions = (questions) => {
       if (!Array.isArray(questions)) return []
-      
+
       return questions.filter((q, idx) => {
         // Check if question has all required fields
         const hasQuestion = q.question && typeof q.question === 'string' && q.question.trim()
         const hasOptions = Array.isArray(q.options) && q.options.length === 4
         const hasCorrectLabel = q.correct_label && typeof q.correct_label === 'string'
         const hasExplanation = q.explination || q.explanation // handle typo
-        
+
         // Validate all options have label and text
-        const validOptions = hasOptions && q.options.every(opt => 
+        const validOptions = hasOptions && q.options.every(opt =>
           opt.label && opt.text && opt.text.trim()
         )
-        
+
         if (!hasQuestion || !validOptions || !hasCorrectLabel) {
-          console.warn(`⚠️ Skipping invalid question ${idx + 1}:`, {
+          console.warn(`Skipping invalid question ${idx + 1}:`, {
             hasQuestion,
             hasOptions,
             validOptions,
@@ -144,28 +202,25 @@ export default function GenerateQuizTab() {
           })
           return false
         }
-        
+
         return true
       })
     }
-    
+
     // If data has a 'content' property that's a string, try parsing it FIRST
     if (data.content && typeof data.content === 'string') {
-      console.log('Data has content property, trying to parse')
       const parsed = tryParse(data.content)
       if (parsed) {
-        console.log('Parsed content result:', parsed)
         // Validate and clean questions
         const validQuestions = validateAndCleanQuestions(parsed.questions || [])
-        
+
         if (parsed.metadata && validQuestions.length > 0) {
-          console.log(`✅ Successfully parsed content with ${validQuestions.length} valid questions`)
           return {
             ...parsed,
             questions: validQuestions
           }
         } else {
-          console.error('❌ Parsed content but invalid structure:', {
+          console.error(' Parsed content but invalid structure:', {
             hasMetadata: !!parsed.metadata,
             totalQuestions: parsed.questions?.length || 0,
             validQuestions: validQuestions.length
@@ -173,53 +228,48 @@ export default function GenerateQuizTab() {
         }
       }
     }
-    
+
     // If data itself is a string, try parsing it
     if (typeof data === 'string') {
-      console.log('Data is a string, trying to parse')
       const parsed = tryParse(data)
       if (parsed) {
-        console.log('Parsed string result:', parsed)
         const validQuestions = validateAndCleanQuestions(parsed.questions || [])
-        
+
         if (parsed.metadata && validQuestions.length > 0) {
-          console.log(`✅ Successfully parsed string with ${validQuestions.length} valid questions`)
           return {
             ...parsed,
             questions: validQuestions
           }
         } else {
-          console.error('❌ Parsed string but invalid structure')
+          console.error('Parsed string but invalid structure')
         }
       }
     }
-    
+
     // If data already has the expected structure, validate and clean it
     if (data.metadata && data.questions) {
       const validQuestions = validateAndCleanQuestions(data.questions)
       if (validQuestions.length > 0) {
-        console.log(`✅ Data has correct structure with ${validQuestions.length} valid questions`)
         return {
           ...data,
           questions: validQuestions
         }
       }
     }
-    
+
     // Check if it has questions but no metadata
     if (data.questions && Array.isArray(data.questions)) {
       const validQuestions = validateAndCleanQuestions(data.questions)
       if (validQuestions.length > 0) {
-        console.log(`⚠️ Data has ${validQuestions.length} valid questions but no metadata, adding empty metadata`)
         return {
           metadata: data.metadata || {},
           questions: validQuestions
         }
       }
     }
-    
+
     // If we get here, the structure is invalid
-    console.error('❌ Invalid quiz data structure')
+    console.error('Invalid quiz data structure')
     console.error('Keys present:', Object.keys(data))
     console.error('Validation:', {
       hasMetadata: !!data.metadata,
@@ -254,8 +304,8 @@ export default function GenerateQuizTab() {
       if (e.target.tagName === 'INPUT') return
       if (e.key === 'ArrowRight') nextQuestion()
       if (e.key === 'ArrowLeft') prevQuestion()
-      if (['1','2','3','4'].includes(e.key)) {
-        const map = { '1':'A','2':'B','3':'C','4':'D' }
+      if (['1', '2', '3', '4'].includes(e.key)) {
+        const map = { '1': 'A', '2': 'B', '3': 'C', '4': 'D' }
         handleSelect(map[e.key])
       }
       if (e.key.toLowerCase() === 'm') toggleMark()
@@ -305,8 +355,8 @@ export default function GenerateQuizTab() {
   }
 
   const formatTime = (sec) => {
-    const m = Math.floor(sec / 60).toString().padStart(2,'0')
-    const s = (sec % 60).toString().padStart(2,'0')
+    const m = Math.floor(sec / 60).toString().padStart(2, '0')
+    const s = (sec % 60).toString().padStart(2, '0')
     return `${m}:${s}`
   }
 
@@ -322,11 +372,10 @@ export default function GenerateQuizTab() {
           <div className="flex items-center gap-3">
             <div className="text-lg font-bold">Q {idx + 1}</div>
             {q.difficulty && (
-              <span className={`text-xs px-2 py-1 rounded ${
-                q.difficulty === 'Easy' ? 'bg-green-100 text-green-700' :
+              <span className={`text-xs px-2 py-1 rounded ${q.difficulty === 'Easy' ? 'bg-green-100 text-green-700' :
                 q.difficulty === 'Med' ? 'bg-yellow-100 text-yellow-700' :
-                'bg-red-100 text-red-700'
-              }`}>
+                  'bg-red-100 text-red-700'
+                }`}>
                 {q.difficulty}
               </span>
             )}
@@ -356,7 +405,7 @@ export default function GenerateQuizTab() {
             const isSelected = selected === opt.label
             const isCorrectOption = opt.label === q.correct_label
             let classes = 'p-4 rounded-lg border-2 cursor-pointer flex items-start gap-3 transition'
-            
+
             if (showFeedback && submitted) {
               if (isCorrectOption) {
                 classes += ' border-green-500 bg-green-50'
@@ -383,9 +432,8 @@ export default function GenerateQuizTab() {
                 }}
                 className={classes}
               >
-                <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center font-semibold ${
-                  isSelected ? 'border-violet-500 bg-violet-500 text-white' : 'border-gray-300'
-                }`}>
+                <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center font-semibold ${isSelected ? 'border-violet-500 bg-violet-500 text-white' : 'border-gray-300'
+                  }`}>
                   {opt.label}
                 </div>
                 <div className="flex-1 text-sm">{opt.text}</div>
@@ -424,14 +472,17 @@ export default function GenerateQuizTab() {
         </div>
 
         {showFeedback && (
-          <div className={`mt-6 p-4 rounded-lg ${
-            isCorrect ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
-          }`}>
+          <div className={`mt-6 p-4 rounded-lg ${isCorrect ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
+            }`}>
             <div className="font-semibold mb-2">
               {isCorrect ? '✓ Correct!' : '✗ Incorrect'}
             </div>
+            <div className="flex  justify-content-center text-center font-semibold mb-2 gap-1">
+              <p>Correct Option :</p>
+              {q.correct_label}
+            </div>
             <div className="text-sm">
-              <strong>Explanation:</strong> {q.explination}
+              <strong>Explanation:</strong>{q.explination}
             </div>
           </div>
         )}
@@ -449,9 +500,9 @@ export default function GenerateQuizTab() {
 
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-        <Card className="w-full max-w-2xl p-6">
+        <Card className="w-full max-w-2xl p-6 bg-gray-300">
           <h2 className="text-2xl font-bold mb-4">Test Completed!</h2>
-          
+
           <div className="grid grid-cols-2 gap-4 mb-6">
             <div className="p-4 bg-gray-50 rounded">
               <div className="text-sm text-gray-600">Score</div>
@@ -471,7 +522,7 @@ export default function GenerateQuizTab() {
             </div>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button onClick={() => { setShowScorecard(false); setCurrent(0) }}>
               Review All
             </Button>
@@ -494,7 +545,7 @@ export default function GenerateQuizTab() {
                   setSubmitted(false)
                   setShowScorecard(false)
                   setCurrent(0)
-                
+
                   setTimeLeft(15 * 60)
                 }
               }}
@@ -510,45 +561,28 @@ export default function GenerateQuizTab() {
   // Generation Form
   if (!quiz) {
     return (
-      <div className="max-w-3xl mx-auto p-6">
-        <h1 className="text-2xl font-bold mb-2">Generate Quiz</h1>
-        <p className="text-slate-600 mb-6">Enter a URL to generate an interactive quiz</p>
-        
-        <form onSubmit={handleGenerateQuiz} className="space-y-3 mb-4">
-          <div className="flex  gap-3">
+      <div className=" mx-auto p-6">
+        <div>
+          <h1 className="text-2xl font-bold mb-2">Generate Quiz</h1>
+          <p className="text-slate-600 mb-6">Enter a URL to generate an interactive quiz</p>
+        </div>
+
+        <form onSubmit={handleGenerateQuiz} className=" mb-4">
+          <div className="flex flex-col sm:flex-row gap-3">
             <Input
               type="url"
               placeholder="https://en.wikipedia.org/wiki/React_(software)"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               disabled={loading}
-              className="flex-1 "
+              className="flex-1 border border-gray-200"
             />
-            <Button type="submit" disabled={loading} className="bg-purple-400 text-white">
+            <Button type="submit" disabled={loading} className="bg-purple-600 text-white">
               {loading && <Loader2 className="w-4 h-4 animate-spin mr-2 " />}
               {loading ? "Generating..." : "Generate Quiz"}
             </Button>
           </div>
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setUrl("https://en.wikipedia.org/wiki/Artificial_intelligence")}
-              disabled={loading}
-            >
-              Use Sample: AI
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setUrl("https://en.wikipedia.org/wiki/Python_(programming_language)")}
-              disabled={loading}
-            >
-              Use Sample: Python
-            </Button>
-          </div>
+
         </form>
 
         {error && (
@@ -574,7 +608,7 @@ export default function GenerateQuizTab() {
               <div className="font-semibold">Q {current + 1} of {total}</div>
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          {/* <div className="flex justify-content-between gap-4 flex-wrap">
             <label className="flex items-center gap-2 text-sm cursor-pointer">
               <input
                 type="checkbox"
@@ -592,7 +626,24 @@ export default function GenerateQuizTab() {
               />
               Dark
             </label>
-          </div>
+          </div> */}
+          <Button
+            className="bg-purple-600 text-white cursor-pointer"
+            onClick={() => {
+              // Reset quiz state to go back to generation form
+              setQuiz(null)
+              setUrl("")
+              setCurrent(0)
+              setAnswers({})
+              setMarked(new Set())
+              setSubmitted(false)
+              setShowScorecard(false)
+              setTimeLeft(15 * 60)
+              setError(null)
+            }}
+          >
+            New Quiz
+          </Button>
         </div>
       </div>
 
@@ -613,9 +664,8 @@ export default function GenerateQuizTab() {
               <div className="text-sm font-semibold">Time Remaining</div>
             </div>
             <div
-              className={`text-3xl font-mono text-center ${
-                timeLeft <= 60 ? 'text-red-600' : timeLeft <= 300 ? 'text-orange-500' : ''
-              }`}
+              className={`text-3xl font-mono text-center ${timeLeft <= 60 ? 'text-red-600' : timeLeft <= 300 ? 'text-orange-500' : ''
+                }`}
             >
               {formatTime(timeLeft)}
             </div>
@@ -658,15 +708,13 @@ export default function GenerateQuizTab() {
                   <button
                     key={i}
                     onClick={() => setCurrent(i)}
-                    className={`relative h-10 rounded text-sm font-medium transition ${
-                      isCurrent
-                        ? 'ring-2 ring-violet-400 ring-offset-2'
-                        : ''
-                    } ${
-                      isAnswered
+                    className={`relative h-10 rounded text-sm font-medium transition ${isCurrent
+                      ? 'ring-2 ring-violet-400 ring-offset-2'
+                      : ''
+                      } ${isAnswered
                         ? 'bg-violet-500 text-white'
                         : 'border border-gray-300 hover:bg-gray-50'
-                    }`}
+                      }`}
                   >
                     {i + 1}
                     {isMarked && (
@@ -681,6 +729,25 @@ export default function GenerateQuizTab() {
       </div>
 
       {showScorecard && <Scorecard />}
+      <div className="mx-5 my-5">
+        <h1 className="font-bold text-3xl mx-2">Similar Topics</h1>
+        <ul className="flex-wrap list-none gap-3 flex my-5 mx-3">
+          {quiz?.metadata?.related_topics?.map((topic, index) => (
+            <li key={index}>
+              <Button
+                className="border border-gray-300 hover:bg-gray-100 cursor-pointer"
+                disabled={loading}
+                onClick={() => {
+                  const newUrl = `https://en.wikipedia.org/wiki/${topic.replace(/ /g, '_')}`
+                  generateQuizFromUrl(newUrl)
+                }}
+              >
+                {topic}
+              </Button>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   )
 }
