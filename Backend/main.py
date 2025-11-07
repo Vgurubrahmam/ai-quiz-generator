@@ -10,7 +10,6 @@ from models import Quiz,Base
 from scraper import scrape_wikipedia
 from llm_quiz_generator import generate_quiz_json
 from pydantic import BaseModel,HttpUrl
-from main import app
 def init_db():
     print("✅ Creating tables if they don't exist...")
     Base.metadata.create_all(bind=engine)
