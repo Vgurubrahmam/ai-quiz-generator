@@ -31,7 +31,7 @@ function App() {
     className="w-12 rounded"
   />
   <div>
-    <h1 className="text-2xl font-bold text-slate-900">AI Quiz Generator</h1>
+    <h1 className="text-xl sm:text-2xl font-bold text-slate-900">AI Quiz Generator</h1>
     <p className="text-sm text-slate-600 dark:text-slate-400">Create quizzes from web content</p>
   </div>
 </div>
