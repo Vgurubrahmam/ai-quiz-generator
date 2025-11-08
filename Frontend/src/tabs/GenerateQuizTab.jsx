@@ -16,12 +16,12 @@ export default function GenerateQuizTab() {
       url: "https://en.wikipedia.org/wiki/Artificial_intelligence",
     },
     {
-      title: "Machine learning",
-      url: "https://en.wikipedia.org/wiki/Machine_learning",
+      title: "ChatGpt",
+      url: "https://en.wikipedia.org/wiki/chatgpt",
     },
     {
-      title: "Large language model",
-      url: "https://en.wikipedia.org/wiki/Large_language_model",
+      title: "Blockchain",
+      url: "https://en.wikipedia.org/wiki/blockchain",
     },
   ]
 
