@@ -163,7 +163,7 @@ export default function GenerateQuizTab() {
     setLoading(true)
     setError(null)
     try {
-      const response = await fetch("https://aiquizmaker-backend.onrender.com/generate_quiz", {
+      const response = await fetch("https://quizmakerai-backend.vercel.app/generate_quiz", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url }),
@@ -239,7 +239,7 @@ export default function GenerateQuizTab() {
     setLoading(true)
 
     try {
-      const response = await fetch("https://aiquizmaker-backend.onrender.com/generate_quiz", {
+      const response = await fetch("https://quizmakerai-backend.vercel.app/generate_quiz", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: newUrl }),

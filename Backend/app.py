@@ -12,9 +12,9 @@ from llm_quiz_generator import generate_quiz_json
 from pydantic import BaseModel, HttpUrl
 
 def init_db():
-    print("✅ Creating tables if they don't exist...")
+    print("Creating tables if they don't exist...")
     Base.metadata.create_all(bind=engine)
-    print("✅ Database setup completed!")
+    print("Database setup completed!")
 
 def get_db():
     db = SessionLocal()
