@@ -1,15 +1,24 @@
 /* eslint-disable no-unused-vars */
-import React, { useState, useEffect, useRef } from "react"
+import React, { useState, useEffect, useRef, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
-import { Loader2, Clock, CheckCircle, AlertCircle } from "lucide-react"
+import {
+  Loader2,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  AlertTriangle,
+  Info,
+} from "lucide-react"
 
 export default function GenerateQuizTab() {
   // Generation state
   const [url, setUrl] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [toasts, setToasts] = useState([])
+  const toastTimers = useRef(new Map())
   const curatedArticles = [
     {
       title: "Artificial intelligence",
@@ -37,11 +46,118 @@ export default function GenerateQuizTab() {
   const [darkMode, setDarkMode] = useState(false)
   const timerRef = useRef(null)
 
+  useEffect(() => {
+    const timers = toastTimers.current
+    return () => {
+      timers.forEach((timerId) => clearTimeout(timerId))
+      timers.clear()
+    }
+  }, [])
+
+  const removeToast = useCallback((id) => {
+    setToasts((prev) => prev.filter((toast) => toast.id !== id))
+    const timerId = toastTimers.current.get(id)
+    if (timerId) {
+      clearTimeout(timerId)
+      toastTimers.current.delete(id)
+    }
+  }, [])
+
+  const showToast = useCallback(
+    ({ type = "info", title, message, duration = 4000 }) => {
+      if (!message) return
+      const id = `${Date.now()}-${Math.random()}`
+      setToasts((prev) => {
+        const next = [...prev, { id, type, title, message }]
+        return next.slice(-4)
+      })
+      const timerId = setTimeout(() => {
+        removeToast(id)
+      }, duration)
+      toastTimers.current.set(id, timerId)
+    },
+    [removeToast]
+  )
+
+  const handleErrorMessage = useCallback(
+    (message) => {
+      setError(message)
+      if (message) {
+        showToast({
+          type: "error",
+          title: "Something went wrong",
+          message,
+        })
+      }
+    },
+    [showToast]
+  )
+
+  const toastContainer = (
+    <div className="fixed top-4 right-4 z-50 flex w-80 max-w-full flex-col gap-3">
+      {toasts.map((toast) => {
+        const variantStyles = {
+          success: {
+            icon: CheckCircle,
+            iconClass: "text-green-600",
+            border: "border-green-500",
+          },
+          error: {
+            icon: AlertCircle,
+            iconClass: "text-red-600",
+            border: "border-red-500",
+          },
+          warning: {
+            icon: AlertTriangle,
+            iconClass: "text-amber-500",
+            border: "border-amber-500",
+          },
+          info: {
+            icon: Info,
+            iconClass: "text-blue-600",
+            border: "border-blue-500",
+          },
+        }
+
+        const { icon: IconComponent, iconClass, border } =
+          variantStyles[toast.type] || variantStyles.info
+
+        return (
+          <div
+            key={toast.id}
+            className={`overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg transition ${border}`}
+          >
+            <div className="flex items-start gap-3 p-4">
+              <IconComponent className={`h-5 w-5 shrink-0 ${iconClass}`} />
+              <div className="flex-1 text-sm text-slate-700">
+                {toast.title && (
+                  <p className="font-semibold text-slate-900">{toast.title}</p>
+                )}
+                <p>{toast.message}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => removeToast(toast.id)}
+                className="rounded px-1 text-xs font-medium text-slate-400 transition hover:text-slate-600"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+
   // Generate quiz from URL
   const handleGenerateQuiz = async (e) => {
     e.preventDefault()
     if (!url.trim()) {
-      alert("Please enter a valid URL")
+      showToast({
+        type: "warning",
+        title: "Missing URL",
+        message: "Please enter a valid URL before generating a quiz.",
+      })
       return
     }
     setLoading(true)
@@ -54,7 +170,7 @@ export default function GenerateQuizTab() {
       })
       const data = await response.json()
       if (!response.ok) {
-        setError(data.detail || response.statusText)
+        handleErrorMessage(data.detail || response.statusText)
       } else {
 
         const parsed = parseQuizData(data.quiz)
@@ -67,6 +183,11 @@ export default function GenerateQuizTab() {
           setSubmitted(false)
           setShowScorecard(false)
           setTimeLeft(15 * 60)
+          showToast({
+            type: "success",
+            title: "Quiz ready",
+            message: "We generated a quiz from your article.",
+          })
         } else {
           // More specific error message
           const rawData = data.quiz
@@ -84,11 +205,11 @@ export default function GenerateQuizTab() {
             errorMsg += `Unexpected format. Check console for details.`
           }
 
-          setError(errorMsg)
+          handleErrorMessage(errorMsg)
         }
       }
     } catch (err) {
-      setError(err.message)
+      handleErrorMessage(err.message)
     } finally {
       setLoading(false)
     }
@@ -97,7 +218,11 @@ export default function GenerateQuizTab() {
   // Helper function to generate quiz from a direct URL (for related topics)
   const generateQuizFromUrl = async (newUrl) => {
     if (!newUrl.trim()) {
-      alert("Invalid URL")
+      showToast({
+        type: "warning",
+        title: "Invalid link",
+        message: "Please select a valid article to continue.",
+      })
       return
     }
 
@@ -121,7 +246,7 @@ export default function GenerateQuizTab() {
       })
       const data = await response.json()
       if (!response.ok) {
-        setError(data.detail || response.statusText)
+        handleErrorMessage(data.detail || response.statusText)
       } else {
 
         const parsed = parseQuizData(data.quiz)
@@ -134,6 +259,11 @@ export default function GenerateQuizTab() {
           setSubmitted(false)
           setShowScorecard(false)
           setTimeLeft(15 * 60)
+          showToast({
+            type: "success",
+            title: "Quiz ready",
+            message: "Generated a quiz for the selected topic.",
+          })
         } else {
           const rawData = data.quiz
           const hasMetadata = rawData?.metadata
@@ -150,11 +280,11 @@ export default function GenerateQuizTab() {
             errorMsg += `Unexpected format. Check console for details.`
           }
 
-          setError(errorMsg)
+          handleErrorMessage(errorMsg)
         }
       }
     } catch (err) {
-      setError(err.message)
+      handleErrorMessage(err.message)
     } finally {
       setLoading(false)
     }
@@ -475,7 +605,16 @@ export default function GenerateQuizTab() {
           <Button onClick={toggleMark} variant="outline" disabled={submitted}>
             {marked.has(current) ? 'Unmark' : 'Mark for Review'}
           </Button>
-          <Button variant="link" onClick={() => alert('Report submitted')}>
+          <Button
+            variant="link"
+            onClick={() =>
+              showToast({
+                type: "success",
+                title: "Report received",
+                message: "Thanks for your feedback! We'll review it shortly.",
+              })
+            }
+          >
             Report
           </Button>
           {practiceMode && !submitted && selected && (
@@ -575,7 +714,9 @@ export default function GenerateQuizTab() {
   // Generation Form
   if (!quiz) {
     return (
-      <div className=" mx-auto p-6">
+      <>
+        {toastContainer}
+        <div className=" mx-auto p-6">
         <div>
           <h1 className="text-2xl font-bold mb-2">Generate Quiz</h1>
           <p className="text-slate-600 mb-6">Enter a URL to generate an interactive quiz</p>
@@ -614,18 +755,16 @@ export default function GenerateQuizTab() {
           ))}
         </div>
 
-        {error && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
-            <strong>Error:</strong> {error}
-          </div>
-        )}
-      </div>
+        </div>
+      </>
     )
   }
 
   // Quiz Player UI
   return (
-    <div className={darkMode ? 'dark' : ''}>
+    <>
+      {toastContainer}
+      <div className={darkMode ? 'dark' : ''}>
       {/* Top Bar */}
       <div className="sticky top-0 z-10 bg-white border-b px-6 py-3">
         <div className="flex items-center justify-between">
@@ -738,8 +877,8 @@ export default function GenerateQuizTab() {
                     key={i}
                     onClick={() => setCurrent(i)}
                     className={`relative h-10 rounded text-sm font-medium transition ${isCurrent
-                      ? 'ring-2 ring-violet-400 ring-offset-2'
-                      : ''
+                        ? 'ring-2 ring-violet-400 ring-offset-2'
+                        : ''
                       } ${isAnswered
                         ? 'bg-violet-500 text-white'
                         : 'border border-gray-300 hover:bg-gray-50'
@@ -778,5 +917,6 @@ export default function GenerateQuizTab() {
         </ul>
       </div>
     </div>
+    </>
   )
 }

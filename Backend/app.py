@@ -33,7 +33,7 @@ app = FastAPI(title="AI wiki quiz generator API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "https://aiquizmaker-three.vercel.app"],
+    allow_origins=["http://localhost:3000", "https://quizmakerai.vercel.app"],
 
     allow_credentials=True,
     allow_methods=["*"],
