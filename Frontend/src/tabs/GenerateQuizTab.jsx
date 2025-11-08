@@ -477,7 +477,7 @@ export default function GenerateQuizTab() {
             <div className="font-semibold mb-2">
               {isCorrect ? '✓ Correct!' : '✗ Incorrect'}
             </div>
-            <div className="flex  justify-content-center text-center font-semibold mb-2 gap-1">
+            <div className="flex  justify-center text-center font-semibold mb-2 gap-1">
               <p>Correct Option :</p>
               {q.correct_label}
             </div>

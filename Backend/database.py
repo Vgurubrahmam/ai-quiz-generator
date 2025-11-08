@@ -24,9 +24,9 @@ if not DATABASE_URL:
 # --- Step 2: Normalize the driver for SQLAlchemy ---
 # Replace legacy prefix with modern one
 if DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg2://", 1)
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
 elif DATABASE_URL.startswith("postgresql://") and "+psycopg" not in DATABASE_URL:
-    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg2://", 1)
+    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
 
 # --- Step 3: Engine configuration ---
 engine_kwargs = {
@@ -38,8 +38,8 @@ engine_kwargs = {
 if DATABASE_URL.startswith("sqlite"):
     engine_kwargs["connect_args"] = {"check_same_thread": False}
 
-if "supabase.co" in DATABASE_URL:
-    engine_kwargs["connect_args"] = {"sslmode": "require"}
+if "supabase.co" in DATABASE_URL and "sslmode" not in DATABASE_URL:
+    engine_kwargs.setdefault("connect_args", {})["sslmode"] = "require"
 
 # --- Step 4: Create engine and session ---
 engine = create_engine(DATABASE_URL, **engine_kwargs)
@@ -55,4 +55,3 @@ def get_db():
     finally:
         db.close()
 
-print("✅ Using database:", DATABASE_URL.split("@")[-1])
