@@ -87,6 +87,33 @@ def _call_model(prompt: str) -> str:
     return "".join(getattr(part, "text", "") for part in parts.parts)
 
 
+def _normalise_llm_payload(payload: Dict) -> None:
+    """Coerce common key variants emitted by the model into the expected schema."""
+    if not isinstance(payload, dict):
+        return
+
+    questions = payload.get("questions")
+    if not isinstance(questions, list):
+        return
+
+    for question in questions:
+        if not isinstance(question, dict):
+            continue
+        options = question.get("options")
+        if not isinstance(options, list):
+            continue
+        for option in options:
+            if not isinstance(option, dict):
+                continue
+            if "text" not in option:
+                for alt_key in ("text_content", "textContent", "content", "option_text"):
+                    if alt_key in option and option[alt_key]:
+                        option["text"] = option.pop(alt_key)
+                        break
+            if "label" in option and isinstance(option["label"], str):
+                option["label"] = option["label"].strip().upper()[:1]
+
+
 def generate_quiz_json(title: str, article_text: str, source_url: str) -> Dict:
     if len(article_text) > 8000:
         logging.warning("Article text truncated from %d to 8000 chars", len(article_text))
@@ -97,6 +124,7 @@ def generate_quiz_json(title: str, article_text: str, source_url: str) -> Dict:
 
     raw_text = _call_model(prompt)
     data = _extract_json(raw_text)
+    _normalise_llm_payload(data)
 
     try:
         quiz = QuizJSON.model_validate(data)
