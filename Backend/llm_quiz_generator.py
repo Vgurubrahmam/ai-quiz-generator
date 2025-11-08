@@ -106,7 +106,7 @@ def _normalise_llm_payload(payload: Dict) -> None:
             if not isinstance(option, dict):
                 continue
             if "text" not in option:
-                for alt_key in ("text_content", "textContent", "content", "option_text"):
+                for alt_key in ("text_content", "textContent", "content", "option_text", "text_text"):
                     if alt_key in option and option[alt_key]:
                         option["text"] = option.pop(alt_key)
                         break
