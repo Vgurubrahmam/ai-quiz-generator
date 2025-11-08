@@ -10,6 +10,20 @@ export default function GenerateQuizTab() {
   const [url, setUrl] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const curatedArticles = [
+    {
+      title: "Artificial intelligence",
+      url: "https://en.wikipedia.org/wiki/Artificial_intelligence",
+    },
+    {
+      title: "Machine learning",
+      url: "https://en.wikipedia.org/wiki/Machine_learning",
+    },
+    {
+      title: "Large language model",
+      url: "https://en.wikipedia.org/wiki/Large_language_model",
+    },
+  ]
 
   // Quiz state
   const [quiz, setQuiz] = useState(null)
@@ -193,13 +207,13 @@ export default function GenerateQuizTab() {
         )
 
         if (!hasQuestion || !validOptions || !hasCorrectLabel) {
-          console.warn(`Skipping invalid question ${idx + 1}:`, {
-            hasQuestion,
-            hasOptions,
-            validOptions,
-            hasCorrectLabel,
-            hasExplanation
-          })
+          // console.warn(`Skipping invalid question ${idx + 1}:`, {
+          //   hasQuestion,
+          //   hasOptions,
+          //   validOptions,
+          //   hasCorrectLabel,
+          //   hasExplanation
+          // })
           return false
         }
 
@@ -584,6 +598,21 @@ export default function GenerateQuizTab() {
           </div>
 
         </form>
+
+        <div className="flex flex-wrap gap-3 mb-6">
+          {curatedArticles.map((article) => (
+            <Button
+              key={article.url}
+              type="button"
+              variant="outline"
+              className="border border-purple-200 hover:bg-gray-50"
+              onClick={() => setUrl(article.url)}
+              disabled={loading}
+            >
+              {article.title}
+            </Button>
+          ))}
+        </div>
 
         {error && (
           <div className="p-4 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
