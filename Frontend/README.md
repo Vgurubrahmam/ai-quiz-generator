@@ -1,16 +1,41 @@
-# React + Vite
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+# AI Quiz Generator Frontend
 
-Currently, two official plugins are available:
+This is the React + Vite frontend for the AI Quiz Generator project. It allows users to generate quizzes from web articles, view quiz history, and take quizzes.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Features
+- Generate quizzes from any article URL
+- Select difficulty and number of questions
+- View and retake past quizzes (history)
+- Click URLs in history or quiz display to auto-fill and generate new quizzes
+- Responsive, modern UI
 
-## React Compiler
+## Setup
+1. Install dependencies:
+	```bash
+	npm install
+	```
+2. Set environment variables:
+	- Create a `.env` file in the Frontend folder
+	- Set `VITE_API_URL` to your backend URL (e.g. `http://localhost:8000` for local dev)
+3. Run the app:
+	```bash
+	npm run dev
+	```
 
-The React Compiler is currently not compatible with SWC. See [this issue](https://github.com/vitejs/vite-plugin-react/issues/428) for tracking the progress.
+## Build for Production
+```bash
+npm run build
+```
 
-## Expanding the ESLint configuration
+## Usage
+- Use the Generate Quiz tab to enter a URL, select difficulty, and number of questions
+- Use the Quiz History tab to view all past quizzes
+- Click any URL in history or quiz display to generate a new quiz for that article
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Notes
+- .env files are ignored by git for security
+- Requires the backend (FastAPI) server running for full functionality
+
+---
+See the backend README for API and deployment details.
