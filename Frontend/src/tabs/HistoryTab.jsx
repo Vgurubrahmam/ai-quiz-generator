@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { API_BASE_URL } from "@/services/api";
 import {
   Table,
   TableBody,
@@ -14,7 +15,7 @@ export default function HistoryTab({ onViewQuiz }) {
     const [quizHistory, setQuizHistory] = useState([])
     
     const handleHistory = async () => {
-        const response = await fetch("https://quizmakerai-backend.vercel.app/history")
+        const response = await fetch(`${API_BASE_URL}/history`)
         const data = await response.json()
         setQuizHistory(data)
     }

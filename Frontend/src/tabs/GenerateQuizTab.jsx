@@ -12,9 +12,13 @@ import {
   Info,
 } from "lucide-react"
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000"
+
 export default function GenerateQuizTab() {
   // Generation state
   const [url, setUrl] = useState("")
+  const [difficulty, setDifficulty] = useState("medium")
+  const [numQuestions, setNumQuestions] = useState(10)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [toasts, setToasts] = useState([])
@@ -163,10 +167,10 @@ export default function GenerateQuizTab() {
     setLoading(true)
     setError(null)
     try {
-      const response = await fetch("https://quizmakerai-backend.vercel.app/generate_quiz", {
+      const response = await fetch(`${API_BASE_URL}/generate_quiz`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url }),
+        body: JSON.stringify({ url, difficulty, num_questions: numQuestions }),
       })
       const data = await response.json()
       if (!response.ok) {
@@ -239,10 +243,10 @@ export default function GenerateQuizTab() {
     setLoading(true)
 
     try {
-      const response = await fetch("https://quizmakerai-backend.vercel.app/generate_quiz", {
+      const response = await fetch(`${API_BASE_URL}/generate_quiz`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: newUrl }),
+        body: JSON.stringify({ url: newUrl, difficulty, num_questions: numQuestions }),
       })
       const data = await response.json()
       if (!response.ok) {
@@ -723,7 +727,7 @@ export default function GenerateQuizTab() {
         </div>
 
         <form onSubmit={handleGenerateQuiz} className=" mb-4">
-          <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex flex-col sm:flex-row gap-3 mb-4">
             <Input
               type="url"
               placeholder="https://en.wikipedia.org/wiki/React_(software)"
@@ -738,6 +742,51 @@ export default function GenerateQuizTab() {
             </Button>
           </div>
 
+          {/* Difficulty and Question Count Selection */}
+          <div className="flex flex-wrap gap-4 mb-4">
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-slate-700">Difficulty Level</label>
+              <div className="flex gap-2">
+                {["easy", "medium", "hard"].map((level) => (
+                  <button
+                    key={level}
+                    type="button"
+                    onClick={() => setDifficulty(level)}
+                    disabled={loading}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium capitalize transition-all ${
+                      difficulty === level
+                        ? level === "easy"
+                          ? "bg-green-500 text-white"
+                          : level === "medium"
+                          ? "bg-yellow-500 text-white"
+                          : "bg-red-500 text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
+                  >
+                    {level}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-slate-700">Number of Questions (5-10)</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="range"
+                  min="5"
+                  max="10"
+                  value={numQuestions}
+                  onChange={(e) => setNumQuestions(parseInt(e.target.value))}
+                  disabled={loading}
+                  className="w-32 accent-purple-600"
+                />
+                <span className="text-lg font-semibold text-purple-600 min-w-[2rem] text-center">
+                  {numQuestions}
+                </span>
+              </div>
+            </div>
+          </div>
         </form>
 
         <div className="flex flex-wrap gap-3 mb-6">

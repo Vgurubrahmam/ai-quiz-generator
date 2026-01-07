@@ -26,20 +26,27 @@ Article Text:
 {article_text}
 
 REQUIREMENTS:
-1. Generate 8-12 multiple-choice questions covering key concepts from the article.
-2. Each question MUST include:
+1. Generate exactly {num_questions} multiple-choice questions covering key concepts from the article.
+2. Difficulty Level: {difficulty}
+   - EASY: Basic recall and simple comprehension questions
+   - MEDIUM: Application and analysis questions requiring deeper understanding
+   - HARD: Complex inference, synthesis, and evaluation questions
+3. Each question MUST include:
    - question: the prompt text
    - options: array of exactly 4 objects with labels A-D and non-empty text
    - correct_label: one of A/B/C/D
+   - difficulty: "{difficulty}"
    - explanation: at least 200 characters explaining the answer
-3. metadata must include:
+4. metadata must include:
    - title: article title
    - source_url: the source URL supplied
+   - difficulty: "{difficulty}"
    - key_entities: list of 3-5 main entities/concepts
    - related_topics: list of 3-5 related topics for further study
 
 CRITICAL RULES:
 - Respond with ONLY a JSON object. No markdown, no prose, no code fences.
+- Generate exactly {num_questions} questions at {difficulty} difficulty level.
 - The JSON must conform to this schema:
 {schema}
 """
@@ -114,13 +121,19 @@ def _normalise_llm_payload(payload: Dict) -> None:
                 option["label"] = option["label"].strip().upper()[:1]
 
 
-def generate_quiz_json(title: str, article_text: str, source_url: str) -> Dict:
+def generate_quiz_json(title: str, article_text: str, source_url: str, difficulty: str = "medium", num_questions: int = 10) -> Dict:
     if len(article_text) > 8000:
         logging.warning("Article text truncated from %d to 8000 chars", len(article_text))
         article_text = article_text[:8000]
 
     schema = QuizJSON.model_json_schema()  # Use Pydantic to describe the expected JSON
-    prompt = _PROMPT_TEMPLATE.format(title=title, article_text=article_text, schema=json.dumps(schema, ensure_ascii=False, indent=2))
+    prompt = _PROMPT_TEMPLATE.format(
+        title=title, 
+        article_text=article_text, 
+        schema=json.dumps(schema, ensure_ascii=False, indent=2),
+        difficulty=difficulty.upper(),
+        num_questions=num_questions
+    )
 
     raw_text = _call_model(prompt)
     data = _extract_json(raw_text)
@@ -132,6 +145,7 @@ def generate_quiz_json(title: str, article_text: str, source_url: str) -> Dict:
         raise RuntimeError(f"Generated quiz failed schema validation: {exc}") from exc
 
     quiz.metadata.source_url = source_url
+    quiz.metadata.difficulty = difficulty
     if not quiz.metadata.title:
         quiz.metadata.title = title
 

@@ -1,5 +1,6 @@
 import json
 import uvicorn
+import traceback
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
@@ -33,8 +34,12 @@ app = FastAPI(title="AI wiki quiz generator API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "https://quizmakerai.vercel.app"],
-
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "https://quizmakerai.vercel.app"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"]
@@ -47,9 +52,18 @@ def health():
 # Endpoint 1
 class GenerateQuizBody(BaseModel):
     url: HttpUrl
+    difficulty: str = "medium"  # easy, medium, hard
+    num_questions: int = 10  # 5-10 questions
 
 @app.post("/generate_quiz")
 def generate_quiz(body: GenerateQuizBody, db: Session = Depends(get_db)):
+    # Validate difficulty
+    if body.difficulty not in ["easy", "medium", "hard"]:
+        raise HTTPException(status_code=400, detail="Difficulty must be 'easy', 'medium', or 'hard'")
+    
+    # Validate number of questions (5-10)
+    num_questions = max(5, min(10, body.num_questions))
+    
     try:
         title, clean_text = scrape_wikipedia(str(body.url))
     except Exception as e:
@@ -59,25 +73,43 @@ def generate_quiz(body: GenerateQuizBody, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Article content too short to generate a quiz.")
 
     try:
-        quiz_json = generate_quiz_json(title=title, article_text=clean_text, source_url=str(body.url))
+        quiz_json = generate_quiz_json(
+            title=title, 
+            article_text=clean_text, 
+            source_url=str(body.url),
+            difficulty=body.difficulty,
+            num_questions=num_questions
+        )
     except Exception as e:
+        print(f"LLM Error: {e}")
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"LLM generation failed: {e}")
 
-    q = Quiz(
-        url=str(body.url),
-        title=title,
-        scraped_content=None,
-        full_quiz_data=json.dumps(quiz_json, ensure_ascii=False)
-    )
+    # Store all data in PostgreSQL including scraped content
+    try:
+        q = Quiz(
+            url=str(body.url),
+            title=title,
+            difficulty=body.difficulty,
+            num_questions=num_questions,
+            scraped_content=clean_text,  # Store the scraped article text
+            full_quiz_data=json.dumps(quiz_json, ensure_ascii=False)
+        )
 
-    db.add(q)
-    db.commit()
-    db.refresh(q)
+        db.add(q)
+        db.commit()
+        db.refresh(q)
+    except Exception as e:
+        print(f"Database Error: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
     return {
         "id": q.id,
         "url": q.url,
         "title": q.title,
+        "difficulty": q.difficulty,
+        "num_questions": q.num_questions,
         "date_generated": q.date_generated,
         "quiz": quiz_json
     }
@@ -87,7 +119,14 @@ def generate_quiz(body: GenerateQuizBody, db: Session = Depends(get_db)):
 def list_history(db: Session = Depends(get_db)):
     rows = db.execute(select(Quiz).order_by(Quiz.id.desc())).scalars().all()
     return [
-        {"id": r.id, "url": r.url, "title": r.title, "date_generated": r.date_generated}
+        {
+            "id": r.id, 
+            "url": r.url, 
+            "title": r.title, 
+            "difficulty": r.difficulty,
+            "num_questions": r.num_questions,
+            "date_generated": r.date_generated
+        }
         for r in rows
     ]
 
@@ -105,6 +144,8 @@ def get_quiz(quiz_id: int, db: Session = Depends(get_db)):
         "id": q.id,
         "url": q.url,
         "title": q.title,
+        "difficulty": q.difficulty,
+        "num_questions": q.num_questions,
         "date_generated": q.date_generated,
         "quiz": data
     }

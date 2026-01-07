@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
+import { API_BASE_URL } from "@/services/api"
 import { Loader2 } from "lucide-react"
 import {
     Accordion,
@@ -22,7 +23,7 @@ export default function QuizDisplay({ quizId, onBack }) {
         setLoading(true)
         setError(null)
         try {
-            const response = await fetch(`https://quizmakerai-backend.vercel.app/quiz/${id}`)
+            const response = await fetch(`${API_BASE_URL}/quiz/${id}`)
             const data = await response.json()
 
             if (!response.ok) {
