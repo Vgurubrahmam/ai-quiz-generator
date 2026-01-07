@@ -13,23 +13,59 @@ This is the FastAPI backend for the AI Quiz Generator project. It provides endpo
 - See `requirements.txt` for dependencies
 
 ## Setup
+
 1. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-2. Set environment variables:
-   - For local dev: use SQLite (default)
-   - For production: set `DATABASE_URL` to your Supabase/PostgreSQL connection string
-   - Optionally use a `.env` file (not committed to git)
+    ```bash
+    pip install -r requirements.txt
+    ```
+2. Configure environment:
+    - For local development, SQLite is used by default.
+    - For production, set `DATABASE_URL` in a `.env` file to your PostgreSQL/Supabase connection string.
+    - Example `.env`:
+       ```
+       DATABASE_URL=your_postgres_connection_string
+       ```
 3. Run the server:
-   ```bash
-   uvicorn app:app --reload
-   ```
+    ```bash
+    uvicorn app:app --reload
+    ```
 
 ## Endpoints
-- `POST /generate_quiz` — Generate a quiz from a URL (accepts `url`, `difficulty`, `num_questions`)
-- `GET /history` — Get all past quizzes
-- `GET /quiz/{id}` — Get a specific quiz by ID
+
+- `POST /generate_quiz`  
+   Generate a quiz from a URL.  
+   **Body:**  
+   ```json
+   {
+      "url": "https://example.com/article",
+      "difficulty": "easy",
+      "num_questions": 10
+   }
+   ```
+
+- `GET /history`  
+   Get all past quizzes.
+
+- `GET /quiz/{id}`  
+   Get a specific quiz by ID.
+
+## Testing Steps
+
+1. **Start the backend server** (see setup above).
+2. **Test endpoints** using [Postman](https://www.postman.com/) or [curl](https://curl.se/):
+    - Generate a quiz:
+       ```bash
+       curl -X POST "http://localhost:8000/generate_quiz" -H "Content-Type: application/json" -d "{\"url\": \"https://example.com/article\", \"difficulty\": \"medium\", \"num_questions\": 5}"
+       ```
+    - View history:
+       ```bash
+       curl "http://localhost:8000/history"
+       ```
+    - View a quiz by ID:
+       ```bash
+       curl "http://localhost:8000/quiz/1"
+       ```
+3. **Check database** for stored quizzes (SQLite or PostgreSQL).
 
 ## Deployment
 - Designed for Vercel/Serverless, works locally and in production environments
