@@ -8,7 +8,7 @@ import {
     AccordionItem,
     AccordionTrigger,
 } from "@/components/ui/accordion"
-export default function QuizDisplay({ quizId, onBack }) {
+export default function QuizDisplay({ quizId, onBack, onUrlClick }) {
     const [quiz, setQuiz] = useState(null)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState(null)
@@ -74,7 +74,17 @@ export default function QuizDisplay({ quizId, onBack }) {
 
             <div className="bg-gray-50 p-4 rounded-lg mb-4">
                 <p className="text-sm text-gray-600">
-                    <strong>URL:</strong> <a href={quiz.url} className="text-blue-600 hover:underline">{quiz.url}</a>
+                    <strong>URL:</strong> {onUrlClick ? (
+                        <button
+                            className="text-blue-600 hover:underline"
+                            style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+                            onClick={() => onUrlClick(quiz.url)}
+                        >
+                            {quiz.url}
+                        </button>
+                    ) : (
+                        <a href={quiz.url} className="text-blue-600 hover:underline">{quiz.url}</a>
+                    )}
                 </p>
                 <p className="text-sm text-gray-600 mt-2">
                     <strong>Generated:</strong> {new Date(quiz.date_generated).toLocaleString()}

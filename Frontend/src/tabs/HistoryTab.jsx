@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/table"
 import {Button} from "@/components/ui/button"
 
-export default function HistoryTab({ onViewQuiz }) {
+export default function HistoryTab({ onViewQuiz, onUrlClick }) {
     const [quizHistory, setQuizHistory] = useState([])
     
     const handleHistory = async () => {
@@ -44,7 +44,20 @@ export default function HistoryTab({ onViewQuiz }) {
       <TableCell className="font-medium">{quiz.title}</TableCell>
       <TableCell>{new Date(quiz.date_generated).toLocaleString()}</TableCell>
       <TableCell>
-        <a href={quiz.url} className="text-blue-600 hover:underline">{quiz.url}</a>
+        {quiz.url ? (
+          <a
+            href="#"
+            className="text-blue-600 hover:underline"
+            onClick={e => {
+              e.preventDefault();
+              if (onUrlClick) onUrlClick(quiz.url);
+            }}
+          >
+            {quiz.url}
+          </a>
+        ) : (
+          ''
+        )}
       </TableCell>
       <TableCell>
         <Button 

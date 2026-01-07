@@ -4,9 +4,11 @@ import { Button } from "@/components/ui/button"
 import HistoryTab from "./tabs/HistoryTab"
 import QuizDisplay from "./components/QuizDisplay"
 
+
 function App() {
-  const [activeTab, setActiveTab] = useState("generate") // "generate" or "history"
+  const [activeTab, setActiveTab] = useState("generate") // "generate" or "history" or "view"
   const [viewQuizId, setViewQuizId] = useState(null) // Quiz ID to view from history
+  const [generateUrl, setGenerateUrl] = useState("") // For passing URL to GenerateQuizTab
 
   // Handler to view quiz from history
   const handleViewQuiz = (quizId) => {
@@ -18,6 +20,12 @@ function App() {
   const handleBackToHistory = () => {
     setViewQuizId(null)
     setActiveTab("history")
+  }
+
+  // Handler for URL click (from history or quiz display)
+  const handleUrlClick = (url) => {
+    setGenerateUrl(url)
+    setActiveTab("generate")
   }
 
   return (
@@ -55,10 +63,10 @@ function App() {
       </div>
 
       {/* Tab Content */}
-      {activeTab === "generate" && <GenerateQuizTab />}
-      {activeTab === "history" && <HistoryTab onViewQuiz={handleViewQuiz} />}
+      {activeTab === "generate" && <GenerateQuizTab initialUrl={generateUrl} />}
+      {activeTab === "history" && <HistoryTab onViewQuiz={handleViewQuiz} onUrlClick={handleUrlClick} />}
       {activeTab === "view" && viewQuizId && (
-        <QuizDisplay quizId={viewQuizId} onBack={handleBackToHistory} />
+        <QuizDisplay quizId={viewQuizId} onBack={handleBackToHistory} onUrlClick={handleUrlClick} />
       )}
     </>
   )

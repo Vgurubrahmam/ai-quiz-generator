@@ -14,9 +14,15 @@ import {
 
 const API_BASE_URL = import.meta.env.VITE_API_URL
 
-export default function GenerateQuizTab() {
+export default function GenerateQuizTab({ initialUrl = "" }) {
   // Generation state
-  const [url, setUrl] = useState("")
+  const [url, setUrl] = useState(initialUrl)
+    // Update url input if initialUrl prop changes
+    useEffect(() => {
+      if (initialUrl && initialUrl !== url) {
+        setUrl(initialUrl)
+      }
+    }, [initialUrl])
   const [difficulty, setDifficulty] = useState("medium")
   const [numQuestions, setNumQuestions] = useState(10)
   const [loading, setLoading] = useState(false)
