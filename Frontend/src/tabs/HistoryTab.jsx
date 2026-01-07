@@ -29,9 +29,11 @@ export default function HistoryTab({ onViewQuiz, onUrlClick }) {
         <Table className="w-[95%] my-5  mx-auto border border-gray-200 shadow-sm rounded-lg">
   <TableHeader>
     <TableRow className="bg-gray-100">
-      <TableHead className="w-[30%] font-semibold text-gray-700">Title</TableHead>
-      <TableHead className="w-[20%] font-semibold text-gray-700">Date</TableHead>
-      <TableHead className="w-[35%] font-semibold text-gray-700">URL</TableHead>
+      <TableHead className="w-[20%] font-semibold text-gray-700">Title</TableHead>
+      <TableHead className="w-[15%] font-semibold text-gray-700">Date</TableHead>
+      <TableHead className="w-[15%] font-semibold text-gray-700">Difficulty</TableHead>
+      <TableHead className="w-[10%] font-semibold text-gray-700">Questions</TableHead>
+      <TableHead className="w-[25%] font-semibold text-gray-700">URL</TableHead>
       <TableHead className="w-[15%] font-semibold text-gray-700">Details</TableHead>
     </TableRow>
   </TableHeader>
@@ -43,6 +45,8 @@ export default function HistoryTab({ onViewQuiz, onUrlClick }) {
              >
       <TableCell className="font-medium">{quiz.title}</TableCell>
       <TableCell>{new Date(quiz.date_generated).toLocaleString()}</TableCell>
+      <TableCell>{quiz.difficulty || '-'}</TableCell>
+      <TableCell>{quiz.num_questions || '-'}</TableCell>
       <TableCell>
         {quiz.url ? (
           <a
@@ -71,7 +75,7 @@ export default function HistoryTab({ onViewQuiz, onUrlClick }) {
          ))
         ) : (
             <TableRow>
-        <TableCell colSpan={4} className="text-center text-gray-500 py-4">
+        <TableCell colSpan={6} className="text-center text-gray-500 py-4">
           No quiz history found.
         </TableCell>
       </TableRow>
